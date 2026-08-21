@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String   @default("borrower") // master | librarian | borrower
+  createdAt DateTime @default(now())
+}
+
+model Book {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String
+  isbn        String
+  description String?
+  quantity    Int      @default(1)
+  status      String   @default("available") // available, borrowed, overdue, lost
+  createdAt   DateTime @default(now())
+}
+
+model Borrower {
+  id          Int      @id @default(autoincrement())
+  lastName    String
+  firstName   String
+  middleInit  String?
+  email       String   @unique
+  status      String   @default("new") // new, regular
+  createdAt   DateTime @default(now())
+}
+
+model Transaction {
+  id         Int       @id @default(autoincrement())
+  bookId     Int
+  borrowerId Int
+  borrowedAt DateTime  @default(now())
+  returnedAt DateTime?
+  overdue    Boolean   @default(false)
+}
