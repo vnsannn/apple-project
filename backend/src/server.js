@@ -29,3 +29,6 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 const booksRoutes = require('./routes/books.routes');
 app.use('/api/v1/books', booksRoutes);
+
+const borrowersRoutes = require('./routes/borrowers.routes');
+app.use('/api/v1/borrowers', borrowersRoutes);
