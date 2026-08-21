@@ -3,11 +3,19 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 const router = express.Router();
+const checkEmailAccess = require("../utils/emailAccess");
 
 // Register
 router.post("/register", async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    const access = await checkEmailAccess(email);
+
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { email, password: hashedPassword, role: "borrower" },

@@ -46,3 +46,6 @@ app.use("/api/v1/activity", activityRoutes);
 
 const usersRoutes = require("./routes/users.routes");
 app.use("/api/v1/users", usersRoutes);
+
+const settingsRoutes = require("./routes/settings.routes");
+app.use("/api/v1/settings", settingsRoutes);
