@@ -1,122 +1,92 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ThemeToggle from "./components/ThemeToggle";
+import logo from "./assets/logo.png";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [darkMode, setDarkMode] = useState(false);
+  const location = useLocation();
+
+  const isRegister = location.pathname === "/register";
+  const isRecovery = location.pathname === "/forgot-password";
+
+  function toggleTheme() {
+    setDarkMode((current) => !current);
+  }
+
+  const welcomeLabel = isRegister
+    ? "NEW BORROWER ACCOUNT"
+    : isRecovery
+      ? "ACCOUNT RECOVERY"
+      : "MEMBER ACCESS";
+
+  const welcomeHeading = isRegister
+    ? "New to the library?"
+    : isRecovery
+      ? "Let’s get you back in."
+      : "Welcome back!";
+
+  const welcomeText = isRegister
+    ? "Create your identity and begin your reading journey. Your next chapter starts here."
+    : isRecovery
+      ? "Use your registered email address to begin recovering access to your account."
+      : "Sign in and continue your reading journey. Your next story is waiting.";
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-shell" data-theme={darkMode ? "dark" : "light"}>
+      <header className="top-nav">
+        <strong className="brand-name">BTECH Library</strong>
+        <ThemeToggle darkMode={darkMode} onToggle={toggleTheme} />
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <div
+        className={`app-card-wrapper ${
+          isRegister ? "register-mode" : "login-mode"
+        }`}
+      >
+        <div className="login-card">
+          <div className="auth-page-container">
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+            </Routes>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <div className="multi-card">
+          <div className="welcome-content">
+            <div className="welcome-logo">
+              <img src={logo} alt="BTECH Library logo" />
+            </div>
+
+            <h1 className="welcome-title">
+              Aklatan ng <span>Dalubhasaan</span>
+            </h1>
+
+            <div className="welcome-divider" />
+
+            <div key={welcomeLabel} className="welcome-message">
+              <span className="welcome-label">{welcomeLabel}</span>
+              <h2>{welcomeHeading}</h2>
+              <p>{welcomeText}</p>
+            </div>
+
+            <div className="welcome-dots" aria-hidden="true">
+              <span />
+              <span className="active" />
+              <span />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
