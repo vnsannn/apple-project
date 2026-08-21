@@ -32,3 +32,6 @@ app.use('/api/v1/books', booksRoutes);
 
 const borrowersRoutes = require('./routes/borrowers.routes');
 app.use('/api/v1/borrowers', borrowersRoutes);
+
+const transactionsRoutes = require('./routes/transactions.routes');
+app.use('/api/v1/transactions', transactionsRoutes);
