@@ -43,3 +43,6 @@ app.use("/api/v1/transactions", transactionsRoutes);
 
 const activityRoutes = require("./routes/activity.routes");
 app.use("/api/v1/activity", activityRoutes);
+
+const usersRoutes = require("./routes/users.routes");
+app.use("/api/v1/users", usersRoutes);
