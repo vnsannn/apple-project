@@ -2,6 +2,7 @@ const express = require("express");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
+const logActivity = require("../utils/activityLog");
 
 const router = express.Router();
 
@@ -26,6 +27,12 @@ router.post(
           },
         },
       });
+
+      await logActivity(
+        req.user.id,
+        "ADD_BOOK",
+        `${book.title} (${book.isbn})`,
+      );
 
       res.status(201).json(book);
     } catch (err) {
@@ -80,15 +87,31 @@ router.put(
 );
 
 // Delete a book (and its copies)
+// Delete a book
 router.delete(
   "/:id",
   authenticate,
   requireRole("librarian", "master"),
   async (req, res) => {
     try {
+      const book = await prisma.book.findUnique({
+        where: { id: Number(req.params.id) },
+      });
+
+      if (!book) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+
       await prisma.book.delete({
         where: { id: Number(req.params.id) },
       });
+
+      await logActivity(
+        req.user.id,
+        "DELETE_BOOK",
+        `${book.title} (${book.isbn})`,
+      );
+
       res.json({ message: "Book deleted" });
     } catch (err) {
       res.status(400).json({ error: err.message });
