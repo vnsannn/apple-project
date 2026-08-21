@@ -8,3 +8,4 @@ build/
 skills-lock.json
 *.log
 .DS_Store
+APPLE.tree

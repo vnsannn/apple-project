@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,40 +6,105 @@ datasource db {
   provider = "postgresql"
 }
 
+// Login account for everyone (borrower, librarian, master)
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   password  String
   role      String   @default("borrower") // master | librarian | borrower
   createdAt DateTime @default(now())
+
+  borrower Borrower?
 }
 
+// Library profile — only borrowers have this (name, QR, violations)
+model Borrower {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastName       String
+  firstName      String
+  middleInit     String?
+  qrCode         String   @unique
+  status         String   @default("active") // active | banned
+  violationCount Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  reservations Reservation[]
+  transactions Transaction[]
+}
+
+// The book title — just info, no quantity
 model Book {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
   author      String
-  isbn        String
+  isbn        String    @unique
+  genre       String?
   description String?
-  quantity    Int      @default(1)
-  status      String   @default("available") // available, borrowed, overdue, lost
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+
+  copies      BookCopy[]
+  reservations Reservation[]
 }
 
-model Borrower {
+// One physical book on the shelf (the QR sticker)
+model BookCopy {
   id          Int      @id @default(autoincrement())
-  lastName    String
-  firstName   String
-  middleInit  String?
-  email       String   @unique
-  status      String   @default("new") // new, regular
+  bookId      Int
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  qrCode      String   @unique
+  condition   String   @default("good") // good | fair | damaged | lost
+  status      String   @default("available") // available | borrowed | reserved | lost
   createdAt   DateTime @default(now())
+
+  transactions Transaction[]
 }
 
+// A borrow/return record
 model Transaction {
   id         Int       @id @default(autoincrement())
-  bookId     Int
+  bookCopyId Int
+  bookCopy   BookCopy  @relation(fields: [bookCopyId], references: [id], onDelete: Cascade)
   borrowerId Int
+  borrower   Borrower  @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
   borrowedAt DateTime  @default(now())
+  dueDate    DateTime
   returnedAt DateTime?
   overdue    Boolean   @default(false)
+}
+
+// Title-level reservation (FIFO queue)
+model Reservation {
+  id         Int      @id @default(autoincrement())
+  bookId     Int
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  borrowerId Int
+  borrower   Borrower @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+  reservedAt DateTime @default(now())
+  expiresAt  DateTime?
+  status     String   @default("queued") // queued | active | claimed | expired | cancelled
+}
+
+// System-wide notices
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// Audit trail — who did what, when
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String   // LOGIN, ADD_BOOK, DELETE_BOOK, BORROW, RETURN, etc.
+  target    String?
+  createdAt DateTime @default(now())
+}
+
+// Key-value settings (email whitelist, etc.)
+model Setting {
+  key   String @id
+  value String
 }

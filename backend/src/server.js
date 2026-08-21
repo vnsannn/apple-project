@@ -26,3 +26,6 @@ app.get('/api/v1/librarian-area', authenticate, requireRole('librarian', 'master
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+const booksRoutes = require('./routes/books.routes');
+app.use('/api/v1/books', booksRoutes);
