@@ -65,8 +65,12 @@ router.get("/", authenticate, async (req, res) => {
 // Get one book by id
 router.get("/:id", authenticate, async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(404).json({ error: "Book not found" });
+    }
     const book = await prisma.book.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: { copies: true },
     });
     if (!book) return res.status(404).json({ error: "Book not found" });
@@ -83,9 +87,17 @@ router.put(
   requireRole("librarian", "master"),
   async (req, res) => {
     try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+      const existing = await prisma.book.findUnique({ where: { id } });
+      if (!existing) {
+        return res.status(404).json({ error: "Book not found" });
+      }
       const { title, author, isbn, genre, description } = req.body;
       const book = await prisma.book.update({
-        where: { id: Number(req.params.id) },
+        where: { id },
         data: { title, author, isbn, genre, description },
       });
       res.json(book);

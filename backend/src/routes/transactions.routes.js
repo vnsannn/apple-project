@@ -38,6 +38,10 @@ router.post(
         return res.status(404).json({ error: "Borrower not found" });
       }
 
+      if (borrower.status === "banned") {
+        return res.status(403).json({ error: "Borrower account is banned" });
+      }
+
       if (bookCopy.status !== "available") {
         return res.status(400).json({ error: "Book copy is not available" });
       }

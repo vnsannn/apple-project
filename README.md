@@ -21,6 +21,7 @@ A full-stack library management system for borrowers, librarians, and master adm
 | Field-level error indicators and animations | Complete |
 | Registration polish, Phase 3 | Complete |
 | Account recovery and final polish, Phase 4 | Complete |
+| Post-Phase-4 audit and robustness fixes | Complete |
 | Automated and browser testing | Planned |
 
 Login and registration are fully connected to the backend, including per-field error feedback and a rate-limit lock. Registration polish is complete (full error system, shared rate-limit lock, client-side validation, phone normalizer), and Phase 4 added email-based account recovery, atomic returns, and a validation sweep. Automated testing is still planned.
@@ -50,8 +51,9 @@ Login and registration are fully connected to the backend, including per-field e
 - Email-based password reset with hashed, single-use, expiring tokens and a brute-force attempt cap
 - Pluggable reset email sender (`console`/`smtp` modes) via Nodemailer
 - Atomic borrow and return with conditional claims to prevent double loans
+- Borrow flow blocks banned borrowers (`403 "Borrower account is banned"`)
 - Server-side input validation across books, transactions, borrowers, and settings
-- Clean error responses across all API routes
+- Clean error responses across all API routes, with `404` for missing/invalid records
 - Startup guard for required environment secrets
 - PostgreSQL database managed through Prisma
 
@@ -291,4 +293,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the fifteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
+This README is part of the seventeenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.

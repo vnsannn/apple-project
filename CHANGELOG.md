@@ -2,6 +2,58 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 17 - 2026-08-22
+
+### Audit fixes + precision improvements (post-Phase-4 audit)
+
+### Fixed
+
+- Banned borrowers can no longer check out books: the borrow counter flow now rejects a borrower whose account status is `banned` with `403 "Borrower account is banned"` (previously a banned borrower could still create a loan and flip a copy to `borrowed`; only login blocked banned accounts)
+- `GET /api/v1/books/:id` with a non-numeric id now returns `404 "Book not found"` instead of surfacing a generic `400` from a Prisma error
+- `PUT /api/v1/books/:id` now returns `404 "Book not found"` when the book does not exist (previously a generic `400`), and rejects non-numeric ids the same way
+
+## Commit 16 - 2026-08-22
+
+### Account recovery UI refinements (Phase 4)
+
+### Added
+
+- 6-box OTP input (`OtpInput.jsx`), Telegram-style: auto-advance on type, backspace-goes-back, arrow-key nav, paste-to-fill, digit-only
+- Trailing refresh button for resending the code, with a 60-second countdown cooldown matching the backend 1-per-minute cap
+- `POST /api/v1/auth/verify-reset-code` endpoint so the boxes color by whether the code is actually correct (not just that 6 digits are filled)
+- Catch-all route so refresh / unknown routes default to `/login`, plus a reload detection that returns the user to `/login` on a hard refresh
+
+### Changed
+
+- Boxes animate green (left to right) on a correct code and red on a wrong one, with no shake on completion
+- Shake is submit-only: an empty/incomplete code shakes on submit; a wrong code shakes on submit after the red color is shown
+- Code step shows the target email plus an info tooltip; email-field tooltip explains the privacy (anti-enumeration) behavior
+- `.otp-refresh` matches the height of the OTP boxes so the row reads as one control
+
+### Fixed
+
+- Reset-code send button no longer submits a stale email state: `sendCode()` now takes the email as a parameter
+- "Set new password" button no longer shows green on load (state carried over from the email step and was not reset on step change)
+
+## Commit 15 - 2026-08-22
+
+### Account recovery, atomic return, and validation sweep (Phase 4)
+
+### Added
+
+- Password reset flow: `POST /forgot-password` and `POST /reset-password`, with hashed single-use tokens, a 15-minute expiry, and a 5-attempt brute-force cap that burns the token
+- `PasswordResetToken` model + `reset_token_attempts` migration (`attempts` counter)
+- Pluggable email sender (`utils/email.js`) with `EMAIL_MODE` = `console` | `smtp`; console mode needs zero setup, SMTP mode uses `nodemailer` (port 465, `SMTP_SECURE=true` recommended)
+- Anti-enumeration on forgot-password: unknown and known emails both return the same generic message; `devCode`/`devFound` only surface in non-SMTP (dev) mode
+- `POST /verify-reset-code` to report code validity without consuming it
+- Atomic return: `updateMany` guard so two concurrent returns of one copy result in exactly one winner
+- Validation sweep via `utils/validate.js` and `utils/respondError.js` across remaining routes
+
+### Changed
+
+- Return flow now atomically closes the open loan and flips the copy to available inside a single transaction
+- Reset endpoint counts wrong attempts toward the brute-force cap and invalidates the token after the limit
+
 ## Commit 14 - 2026-08-22
 
 ### Fix borrower profile editing + theme persistence (Phase 3 follow-up)
