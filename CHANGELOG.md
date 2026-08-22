@@ -2,6 +2,20 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 14 - 2026-08-22
+
+### Fix borrower profile editing + theme persistence (Phase 3 follow-up)
+
+### Added
+
+- Shared phone normalizer utility so every write path stores the same `+63 9XX XXX XXXX` format
+- Theme preference persisted across reloads (localStorage, key `slims_theme`)
+
+### Fixed
+
+- `PUT /api/v1/borrowers/:id` no longer references the removed `middleInit` field, so editing a borrower's middle name or phone number works again instead of returning `400` / silently dropping the values
+- `POST /api/v1/borrowers` (librarian-created borrowers) now normalizes and validates the phone number like self-registration does, and rejects malformed phone numbers with `400`
+
 ## Commit 13 - 2026-08-22
 
 ### Registration polish (Phase 3)

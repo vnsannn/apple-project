@@ -56,6 +56,7 @@ Login and registration are fully connected to the backend, including per-field e
 - Login, registration, and account-recovery routes
 - Animated Login and Welcome card swapping
 - Light and dark themes with smooth transitions
+- Theme preference remembered across page reloads
 - Frosted card backgrounds and responsive form layouts
 - Internally scrollable registration form with a hidden scrollbar
 - Registration fields for first name, middle name, last name, email, phone, password, and password confirmation
