@@ -6,6 +6,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ThemeToggle from "./components/ThemeToggle";
 import logo from "./assets/logo.png";
 import "./App.css";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -13,6 +15,7 @@ function App() {
 
   const isRegister = location.pathname === "/register";
   const isRecovery = location.pathname === "/forgot-password";
+  const isDashboard = location.pathname.startsWith("/dashboard");
 
   function toggleTheme() {
     setDarkMode((current) => !current);
@@ -43,48 +46,56 @@ function App() {
         <ThemeToggle darkMode={darkMode} onToggle={toggleTheme} />
       </header>
 
-      <div
-        className={`app-card-wrapper ${
-          isRegister ? "register-mode" : "login-mode"
-        }`}
-      >
-        <div className="login-card">
-          <div className="auth-page-container">
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-            </Routes>
-          </div>
-        </div>
-
-        <div className="multi-card">
-          <div className="welcome-content">
-            <div className="welcome-logo">
-              <img src={logo} alt="BTECH Library logo" />
-            </div>
-
-            <h1 className="welcome-title">
-              Aklatan ng <span>Dalubhasaan</span>
-            </h1>
-
-            <div className="welcome-divider" />
-
-            <div key={welcomeLabel} className="welcome-message">
-              <span className="welcome-label">{welcomeLabel}</span>
-              <h2>{welcomeHeading}</h2>
-              <p>{welcomeText}</p>
-            </div>
-
-            <div className="welcome-dots" aria-hidden="true">
-              <span />
-              <span className="active" />
-              <span />
+      {isDashboard ? (
+        <Routes>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Route>
+        </Routes>
+      ) : (
+        <div
+          className={`app-card-wrapper ${
+            isRegister ? "register-mode" : "login-mode"
+          }`}
+        >
+          <div className="login-card">
+            <div className="auth-page-container">
+              <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+              </Routes>
             </div>
           </div>
+
+          <div className="multi-card">
+            <div className="welcome-content">
+              <div className="welcome-logo">
+                <img src={logo} alt="BTECH Library logo" />
+              </div>
+
+              <h1 className="welcome-title">
+                Aklatan ng <span>Dalubhasaan</span>
+              </h1>
+
+              <div className="welcome-divider" />
+
+              <div key={welcomeLabel} className="welcome-message">
+                <span className="welcome-label">{welcomeLabel}</span>
+                <h2>{welcomeHeading}</h2>
+                <p>{welcomeText}</p>
+              </div>
+
+              <div className="welcome-dots" aria-hidden="true">
+                <span />
+                <span className="active" />
+                <span />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

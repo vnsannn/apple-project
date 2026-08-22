@@ -14,8 +14,15 @@ router.post(
   requireRole("librarian", "master"),
   async (req, res) => {
     try {
-      const { email, password, lastName, firstName, middleInit, qrCode } =
-        req.body;
+      const {
+        email,
+        password,
+        lastName,
+        firstName,
+        middleName,
+        phone,
+        qrCode,
+      } = req.body;
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -23,7 +30,8 @@ router.post(
         data: {
           lastName,
           firstName,
-          middleInit,
+          middleName,
+          phone,
           qrCode,
           user: {
             create: {

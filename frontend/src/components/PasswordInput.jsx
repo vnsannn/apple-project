@@ -8,6 +8,7 @@ function PasswordInput({
   autoComplete,
   minLength,
   required = false,
+  disabled = false,
 }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -21,6 +22,7 @@ function PasswordInput({
         autoComplete={autoComplete}
         minLength={minLength}
         required={required}
+        disabled={disabled}
       />
 
       <button

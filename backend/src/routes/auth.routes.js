@@ -28,10 +28,13 @@ router.get("/registration-policy", async (req, res) => {
 // Register
 router.post("/register", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, firstName, lastName, middleName, phone } =
+      req.body;
 
     const cleanEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
+    const cleanFirst = typeof firstName === "string" ? firstName.trim() : "";
+    const cleanLast = typeof lastName === "string" ? lastName.trim() : "";
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       return res.status(400).json({ error: "Enter a valid email address" });
@@ -43,18 +46,60 @@ router.post("/register", async (req, res) => {
         .json({ error: "Password must be at least 8 characters" });
     }
 
+    if (!cleanFirst || !cleanLast) {
+      return res
+        .status(400)
+        .json({ error: "First and last name are required" });
+    }
+
     const access = await checkEmailAccess(cleanEmail);
 
     if (!access.allowed) {
       return res.status(403).json({ error: access.reason });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { email: cleanEmail, password: hashedPassword, role: "borrower" },
+    const lastBorrower = await prisma.borrower.findFirst({
+      orderBy: { id: "desc" },
+      select: { id: true },
     });
-    res.status(201).json({ id: user.id, email: user.email, role: user.role });
+
+    const qrCode = `BOR-${String((lastBorrower?.id ?? 0) + 1).padStart(3, "0")}`;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email: cleanEmail,
+        password: hashedPassword,
+        role: "borrower",
+        borrower: {
+          create: {
+            firstName: cleanFirst,
+            lastName: cleanLast,
+            middleName:
+              typeof middleName === "string" && middleName.trim()
+                ? middleName.trim()
+                : null,
+            phone:
+              typeof phone === "string" && phone.trim() ? phone.trim() : null,
+            qrCode,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      borrower: { qrCode },
+    });
   } catch (err) {
+    if (err.code === "P2002" && err.meta?.target?.includes("qrCode")) {
+      return res
+        .status(409)
+        .json({ error: "Registration conflict, please try again" });
+    }
     if (err.code === "P2002") {
       return res.status(409).json({ error: "Email is already registered" });
     }
@@ -70,20 +115,46 @@ router.post("/login", async (req, res) => {
 
     const cleanEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
+    const cleanPassword = typeof password === "string" ? password : "";
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      return res.status(400).json({ error: "Enter a valid email address" });
+    if (!cleanEmail && !cleanPassword) {
+      return res.status(400).json({ error: "Enter your account" });
     }
 
-    if (typeof password !== "string" || password.length === 0) {
+    if (!cleanEmail) {
+      return res.status(400).json({ error: "Enter your email" });
+    }
+
+    if (!cleanPassword) {
       return res.status(400).json({ error: "Enter your password" });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ error: "Invalid email" });
+    }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+
+    if (!user) {
+      const access = await checkEmailAccess(cleanEmail);
+
+      if (access.enabled && !access.allowed) {
+        return res.status(400).json({ error: "Invalid email" });
+      }
+
+      return res.status(401).json({ error: "Email not registered" });
+    }
+
+    const valid = await bcrypt.compare(cleanPassword, user.password);
+    if (!valid) return res.status(401).json({ error: "Wrong password" });
+
+    const borrower = await prisma.borrower.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (borrower?.status === "banned") {
+      return res.status(403).json({ error: "Banned account" });
+    }
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },

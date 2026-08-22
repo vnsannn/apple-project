@@ -6,7 +6,12 @@ require("dotenv").config();
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: [process.env.FRONTEND_URL] }));
+app.use(
+  cors({
+    origin: [process.env.FRONTEND_URL],
+    exposedHeaders: ["Retry-After"],
+  }),
+);
 app.use(express.json());
 
 // Max 20 auth attempts per 15 minutes per IP

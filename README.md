@@ -17,11 +17,13 @@ A full-stack library management system for borrowers, librarians, and master adm
 | Backend core APIs | Complete |
 | Backend security hardening | Complete |
 | Authentication UI, Login Phase 1 | Complete |
-| Frontend and backend authentication wiring | Planned for Phase 2 |
-| Field-level error indicators and animations | Planned for Phase 2 |
-| Automated and browser testing | Planned for Phase 2 |
+| Login Phase 2, backend wiring | Complete |
+| Field-level error indicators and animations | Complete |
+| Registration polish, Phase 3 | Planned |
+| Account recovery and final polish, Phase 4 | Planned |
+| Automated and browser testing | Planned |
 
-Login Phase 1 focuses on the complete authentication interface and user experience. The forms are not connected to the backend yet.
+Login and registration are fully connected to the backend, including per-field error feedback and a rate-limit lock. Registration polish, account recovery, and automated testing are planned for Phases 3 and 4.
 
 ## Features
 
@@ -30,6 +32,8 @@ Login Phase 1 focuses on the complete authentication interface and user experien
 - JWT-based registration and login
 - Password hashing with bcrypt
 - Role-based access for `master`, `librarian`, and `borrower`
+- Login error dictionary with banned-account blocking
+- Borrower profiles created at self-registration with auto-generated QR codes
 - Book and book-copy management
 - Borrower management
 - QR-based borrow and return transactions
@@ -37,7 +41,7 @@ Login Phase 1 focuses on the complete authentication interface and user experien
 - Master-only user role management
 - Configurable email access using approved domains and individual addresses
 - Security headers through helmet
-- Rate limiting on authentication endpoints
+- Rate limiting on authentication endpoints with retry timing exposed to the frontend
 - CORS locked to the configured frontend origin
 - Public registration-policy endpoint exposing only the enabled flag and approved domains
 - Input validation on authentication routes
@@ -51,6 +55,14 @@ Login Phase 1 focuses on the complete authentication interface and user experien
 - Frosted card backgrounds and responsive form layouts
 - Internally scrollable registration form with a hidden scrollbar
 - Registration fields for first name, middle name, last name, email, phone, password, and password confirmation
+- Shared API client with a single configured backend URL
+- Auth context that keeps users signed in across refreshes
+- Protected dashboard route with signed-out redirect
+- Login error messages shown inline on the submit button
+- Per-field shake animations, inherited from the portfolio design
+- Rate-limit lock with a live countdown that survives refreshes
+- Automatic lock release when the backend restarts
+- Client-side empty-field checks that never call the API
 - Clickable information tooltips rendered outside the scrollable form
 - Dynamic email-access and approved-domain information
 - Accessible password visibility controls using Lucide `Eye` and `EyeOff`
@@ -75,14 +87,17 @@ apple-project/
 ├── backend/
 │   ├── prisma/
 │   ├── src/
+│   │   ├── config/
 │   │   ├── middleware/
 │   │   ├── routes/
 │   │   └── utils/
 │   └── package.json
 ├── frontend/
 │   ├── src/
+│   │   ├── api/
 │   │   ├── assets/
 │   │   ├── components/
+│   │   ├── context/
 │   │   └── pages/
 │   └── package.json
 ├── dev.py
@@ -116,7 +131,7 @@ npm install --prefix backend
 npm install --prefix frontend
 ```
 
-### 3. Configure the backend environment
+### 3. Configure the environment
 
 Create `backend/.env` and add your local values:
 
@@ -127,7 +142,13 @@ PORT=5000
 FRONTEND_URL="http://localhost:5173"
 ```
 
-Never commit `.env` or real credentials.
+Optionally create `frontend/.env` to point at a different backend:
+
+```env
+VITE_API_URL="http://localhost:5000"
+```
+
+Never commit `.env` files or real credentials.
 
 ### 4. Prepare Prisma
 
@@ -201,18 +222,24 @@ Protected routes require a JWT in the request header:
 Authorization: Bearer YOUR_TOKEN
 ```
 
-## Phase 2 plan
+## Roadmap
 
-The next authentication phase will focus on behavior rather than visual design:
+Login Phase 2 is complete. Remaining authentication work:
 
-1. Connect Login and Register forms to the backend.
-2. Add client-side validation and password confirmation checks.
-3. Display clear server and network errors.
-4. Shake only the field that contains an error.
-5. Add loading, disabled, success, and redirect states.
-6. Store and restore authentication safely.
-7. Add protected routes based on account roles.
-8. Test keyboard access, mobile layouts, API failures, and complete authentication flows.
+### Phase 3, registration polish
+
+1. Inherit the Login error system: field-level errors, shake, and button messages.
+2. Client-side empty-field checks that skip the API.
+3. Share the rate-limit lock with the login page.
+4. Show the assigned borrower QR code after signup.
+
+### Phase 4, account recovery and final polish
+
+1. Design the account recovery flow for the existing Forgot Password page.
+2. Final validation sweep across all backend routes.
+3. Atomic borrow and return transactions.
+4. Persistent rate-limit storage and theme preference.
+5. Automated and browser testing.
 
 ## Current integration notes
 
@@ -222,7 +249,7 @@ The public registration-policy endpoint is live:
 GET /api/v1/auth/registration-policy
 ```
 
-Recommended public response:
+It returns only the enabled flag and the approved domain list:
 
 ```json
 {
@@ -231,9 +258,7 @@ Recommended public response:
 }
 ```
 
-This endpoint must not expose individually approved email addresses. Until it exists, the tooltip displays an unavailable status and registration can still perform the final server-side check.
-
-Already registered accounts should skip the registration email-access check and sign in normally. Password confirmation is frontend validation only and must not be stored or sent as a separate persisted field.
+Individually approved email addresses are never exposed. Already registered accounts skip the email-access check and sign in normally, even when the whitelist is enabled. Password confirmation is frontend validation only and must not be stored or sent as a separate persisted field.
 
 ## Development notes
 
@@ -242,7 +267,8 @@ Already registered accounts should skip the registration email-access check and 
 - Restart the backend after changes to the generated Prisma client.
 - Keep public registration assigned to the `borrower` role.
 - Enforce permissions on the backend even when the frontend hides an action.
+- The rate limit counter lives in server memory and resets on backend restart.
 
 ## Changelog
 
-This README is part of the tenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the Login Phase 1 update summary.
+This README is part of the eleventh project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the Login Phase 2 update summary.

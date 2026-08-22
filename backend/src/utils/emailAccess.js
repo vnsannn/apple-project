@@ -16,6 +16,7 @@ async function checkEmailAccess(email) {
 
   if (enabled !== "true") {
     return {
+      enabled: false,
       allowed: true,
       reason: "Email access control is disabled",
     };
@@ -26,6 +27,7 @@ async function checkEmailAccess(email) {
 
   if (emails.includes(cleanEmail)) {
     return {
+      enabled: true,
       allowed: true,
       reason: "Email is specifically allowed",
     };
@@ -33,12 +35,14 @@ async function checkEmailAccess(email) {
 
   if (domain && domains.includes(domain)) {
     return {
+      enabled: true,
       allowed: true,
       reason: "Email domain is allowed",
     };
   }
 
   return {
+    enabled: true,
     allowed: false,
     reason: "Email is not allowed",
   };

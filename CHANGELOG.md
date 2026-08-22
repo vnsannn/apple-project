@@ -2,6 +2,34 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 11 - 2026-08-22
+
+### Login Phase 2
+
+### Added
+
+- Frontend API client with a single configured backend URL
+- Auth context storing the token and user, persisted across refreshes
+- Protected dashboard route with redirect for signed-out visitors
+- Login and Register forms wired to the backend with auto-login after registration
+- Borrower profile creation at self-registration with an auto-generated QR code
+- Login error dictionary: enter account, enter email, enter password, invalid email, email not registered, wrong password, banned account
+- Per-field error states with shake animations inherited from the portfolio
+- Submit button error and success states with inline error messages
+- Banned borrower check on login after password verification
+- Rate-limit lock with a server-provided countdown
+- Lock persistence across page refreshes and automatic recovery detection after a backend restart
+- Client-side empty-field validation that skips the API entirely
+
+### Changed
+
+- Borrower records now store the full middle name and phone number
+- Existing accounts always pass the email whitelist on login
+- Only the input boxes shake on errors, keeping labels and tooltips still
+- The password visibility eye shakes together with its input
+- Rate limit responses expose the Retry-After header to the frontend
+- Domain whitelist tooltips render approved domains as centered pill badges
+
 ## Commit 10 - 2026-08-22
 
 ### Backend security pass
@@ -149,9 +177,3 @@ All notable project updates are recorded here by commit milestone.
 - Added registration and login with JWT and bcrypt.
 - Added the initial role-based middleware and protected routes.
 - Added the monorepo development setup.
-
-## Suggested ninth commit message
-
-```text
-Complete Login Phase 1 UI and add project documentation
-```

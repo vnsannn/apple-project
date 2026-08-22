@@ -1,8 +1,18 @@
+import { useAuth } from "../context/AuthContext.jsx";
+
 function Dashboard() {
+  const { user, logout } = useAuth();
+
   return (
     <main>
       <h1>Dashboard</h1>
-      <p>Welcome to the library system.</p>
+      <p>
+        Signed in as <strong>{user ? user.email : "?"}</strong>
+        {user ? ` (${user.role})` : ""}
+      </p>
+      <button type="button" onClick={logout}>
+        Log out
+      </button>
     </main>
   );
 }

@@ -24,7 +24,8 @@ model Borrower {
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lastName       String
   firstName      String
-  middleInit     String?
+  middleName    String?
+  phone         String?
   qrCode         String   @unique
   status         String   @default("active") // active | banned
   violationCount Int      @default(0)

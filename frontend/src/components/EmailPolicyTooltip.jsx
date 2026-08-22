@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import InfoTooltip from "./InfoTooltip.jsx";
+import { API_URL } from "../api/client.js";
 
 function EmailPolicyTooltip() {
   const [emailPolicy, setEmailPolicy] = useState({
@@ -15,7 +16,7 @@ function EmailPolicyTooltip() {
     async function loadEmailPolicy() {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/v1/auth/registration-policy",
+          `${API_URL}/api/v1/auth/registration-policy`,
           { signal: controller.signal },
         );
 
@@ -69,11 +70,15 @@ function EmailPolicyTooltip() {
           (emailPolicy.domains.length > 0 ? (
             <>
               Email access is restricted for new registrations. Use an address
-              from a whitelisted domain:{" "}
-              <strong>
-                {emailPolicy.domains.map((domain) => `@${domain}`).join(", ")}
+              from a whitelisted domain: <br />{" "}
+              <strong className="email-policy-domains">
+                {emailPolicy.domains.map((domain) => (
+                  <span className="email-policy-domain" key={domain}>
+                    @{domain}
+                  </span>
+                ))}
               </strong>
-              . Individually approved addresses may also register.
+              Individually approved addresses may also register.
             </>
           ) : (
             "Email access is restricted. Only addresses approved by the library can create an account."
