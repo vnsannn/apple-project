@@ -15,6 +15,22 @@ model User {
   createdAt DateTime @default(now())
 
   borrower Borrower?
+  passwordResetTokens PasswordResetToken[]
+}
+
+// One-time password reset code. Hashed, single-use, expiring.
+// This same token/OTP shape is the seam for future 2FA codes + backup codes.
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // Library profile — only borrowers have this (name, QR, violations)

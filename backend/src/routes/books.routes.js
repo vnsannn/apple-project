@@ -4,6 +4,7 @@ const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const logActivity = require("../utils/activityLog");
 const respondError = require("../utils/respondError");
+const { nonEmpty, isArrayOfShapes } = require("../utils/validate");
 const router = express.Router();
 
 // Create a book (title + its copies)
@@ -14,6 +15,14 @@ router.post(
   async (req, res) => {
     try {
       const { title, author, isbn, genre, description, copies } = req.body;
+
+      if (!nonEmpty(title) || !nonEmpty(author) || !nonEmpty(isbn)) {
+        return res.status(400).json({ error: "Title, author, and ISBN are required" });
+      }
+
+      if (!isArrayOfShapes(copies || [], ["qrCode"])) {
+        return res.status(400).json({ error: "copies must be an array of copies with a qrCode" });
+      }
 
       const book = await prisma.book.create({
         data: {

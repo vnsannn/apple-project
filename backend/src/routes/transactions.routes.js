@@ -4,6 +4,7 @@ const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const respondError = require("../utils/respondError");
+const { nonEmpty } = require("../utils/validate");
 const router = express.Router();
 
 // Borrow a book copy
@@ -15,6 +16,10 @@ router.post(
   async (req, res) => {
     try {
       const { bookCopyQrCode, borrowerQrCode } = req.body;
+
+      if (!nonEmpty(bookCopyQrCode) || !nonEmpty(borrowerQrCode)) {
+        return res.status(400).json({ error: "Book copy and borrower QR are required" });
+      }
 
       const bookCopy = await prisma.bookCopy.findUnique({
         where: { qrCode: bookCopyQrCode },
@@ -96,6 +101,10 @@ router.post(
     try {
       const { bookCopyQrCode, condition } = req.body;
 
+      if (!nonEmpty(bookCopyQrCode)) {
+        return res.status(400).json({ error: "Book copy QR is required" });
+      }
+
       const bookCopy = await prisma.bookCopy.findUnique({
         where: { qrCode: bookCopyQrCode },
         include: { book: true },
@@ -105,74 +114,48 @@ router.post(
         return res.status(404).json({ error: "Book copy not found" });
       }
 
-      const activeTransaction = await prisma.transaction.findFirst({
-        where: {
-          bookCopyId: bookCopy.id,
-          returnedAt: null,
-        },
-        include: {
-          bookCopy: {
-            include: {
-              book: true,
-            },
+      const transaction = await prisma.$transaction(async (tx) => {
+        // Atomically close the open loan: only succeeds if returnedAt is still
+        // null. Two concurrent returns of the same copy -> exactly one wins.
+        const closed = await tx.transaction.updateMany({
+          where: { bookCopyId: bookCopy.id, returnedAt: null },
+          data: { returnedAt: new Date() },
+        });
+
+        if (closed.count === 0) {
+          const conflict = new Error("No active loan for this book copy");
+          conflict.status = 400;
+          throw conflict;
+        }
+
+        // Set the copy available inside the same transaction so a borrow can't
+        // race in between the close and the status flip.
+        await tx.bookCopy.update({
+          where: { id: bookCopy.id },
+          data: {
+            status: "available",
+            ...(condition ? { condition } : {}),
           },
-          borrower: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  role: true,
-                },
+        });
+
+        return tx.transaction.findFirst({
+          where: { bookCopyId: bookCopy.id, returnedAt: { not: null } },
+          orderBy: { returnedAt: "desc" },
+          include: {
+            bookCopy: { include: { book: true } },
+            borrower: {
+              include: {
+                user: { select: { id: true, email: true, role: true } },
               },
             },
           },
-        },
-      });
-
-      if (!activeTransaction) {
-        return res
-          .status(400)
-          .json({ error: "No active loan for this book copy" });
-      }
-
-      const transaction = await prisma.transaction.update({
-        where: { id: activeTransaction.id },
-        data: {
-          returnedAt: new Date(),
-        },
-        include: {
-          bookCopy: {
-            include: {
-              book: true,
-            },
-          },
-          borrower: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  role: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      await prisma.bookCopy.update({
-        where: { id: bookCopy.id },
-        data: {
-          status: "available",
-          condition: condition || bookCopy.condition,
-        },
+        });
       });
 
       await logActivity(
         req.user.id,
         "RETURN_BOOK",
-        `${bookCopy.book.title} (${bookCopy.qrCode}) <- ${activeTransaction.borrower.firstName} ${activeTransaction.borrower.lastName}`,
+        `${bookCopy.book.title} (${bookCopy.qrCode}) <- ${transaction.borrower.firstName} ${transaction.borrower.lastName}`,
       );
 
       res.json(transaction);

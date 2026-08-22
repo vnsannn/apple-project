@@ -9,3 +9,12 @@ skills-lock.json
 *.log
 .DS_Store
 APPLE.tree
+
+# Local test/debug artifacts (never commit)
+smtp-test.js
+backend/smtp-test.js
+
+# A migration folder that leaks into the wrong location (directly under
+# backend/prisma/ but not under backend/prisma/migrations/) is accidental.
+# The real password-reset-token migrations live in backend/prisma/migrations/.
+/backend/prisma/20260822092327_password_reset_tokens/

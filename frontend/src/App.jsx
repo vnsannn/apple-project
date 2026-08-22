@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Route, Routes, useLocation, useNavigate, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -24,10 +24,27 @@ function getInitialTheme() {
 function App() {
   const [darkMode, setDarkMode] = useState(getInitialTheme);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isRegister = location.pathname === "/register";
   const isRecovery = location.pathname === "/forgot-password";
   const isDashboard = location.pathname.startsWith("/dashboard");
+
+  // On a hard page reload, default back to /login so refresh always lands on
+  // the login screen. We latch this once with a ref and run the redirect only
+  // on mount (empty deps) so it never re-fires on later client-side navigation.
+  const reloaded = useRef(
+    typeof performance !== "undefined" &&
+      performance.getEntriesByType?.("navigation")[0]?.type === "reload",
+  );
+
+  useEffect(() => {
+    if (reloaded.current) {
+      reloaded.current = false;
+      navigate("/login", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleTheme() {
     setDarkMode((current) => {
@@ -85,6 +102,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </div>
           </div>

@@ -20,10 +20,10 @@ A full-stack library management system for borrowers, librarians, and master adm
 | Login Phase 2, backend wiring | Complete |
 | Field-level error indicators and animations | Complete |
 | Registration polish, Phase 3 | Complete |
-| Account recovery and final polish, Phase 4 | Planned |
+| Account recovery and final polish, Phase 4 | Complete |
 | Automated and browser testing | Planned |
 
-Login and registration are fully connected to the backend, including per-field error feedback and a rate-limit lock. Registration polish is complete: registration inherited the full error system, a shared rate-limit lock, client-side validation, and the phone number normalizer. Account recovery and automated testing are planned for Phase 4.
+Login and registration are fully connected to the backend, including per-field error feedback and a rate-limit lock. Registration polish is complete (full error system, shared rate-limit lock, client-side validation, phone normalizer), and Phase 4 added email-based account recovery, atomic returns, and a validation sweep. Automated testing is still planned.
 
 ## Features
 
@@ -47,6 +47,10 @@ Login and registration are fully connected to the backend, including per-field e
 - Input validation on authentication routes
 - Registration message dictionary aligned with the login error style
 - Phone number normalization to the spaced `+63 912 345 6789` format
+- Email-based password reset with hashed, single-use, expiring tokens and a brute-force attempt cap
+- Pluggable reset email sender (`console`/`smtp` modes) via Nodemailer
+- Atomic borrow and return with conditional claims to prevent double loans
+- Server-side input validation across books, transactions, borrowers, and settings
 - Clean error responses across all API routes
 - Startup guard for required environment secrets
 - PostgreSQL database managed through Prisma
@@ -74,6 +78,11 @@ Login and registration are fully connected to the backend, including per-field e
 - Clickable information tooltips rendered outside the scrollable form
 - Dynamic email-access and approved-domain information
 - Accessible password visibility controls using Lucide `Eye` and `EyeOff`
+- Account recovery two-step flow: email → code + new password
+- OTP input with auto-advance, backspace navigation, and paste-to-fill
+- Green/red verification animation on the OTP boxes (correct vs incorrect code)
+- Resend-code button with a 60-second cooldown
+- Unknown routes and refresh default to `/login`
 - Example-based placeholders with masked password examples
 - Custom BTECH Library branding and logo
 
@@ -148,6 +157,19 @@ DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/slims_db"
 JWT_SECRET="replace-this-with-a-long-random-secret"
 PORT=5000
 FRONTEND_URL="http://localhost:5173"
+```
+
+Optional email (resets work in `console` mode with nothing set; set these for real emails):
+
+```env
+EMAIL_MODE=smtp            # console | smtp
+EMAIL_FROM="you@example.com"
+EMAIL_FROM_NAME="BTECH Library"
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER="you@example.com"
+SMTP_PASS="your-app-password"
 ```
 
 Optionally create `frontend/.env` to point at a different backend:
@@ -232,15 +254,12 @@ Authorization: Bearer YOUR_TOKEN
 
 ## Roadmap
 
-Login Phase 2 and registration polish (Phase 3) are complete. Remaining authentication work:
+Login Phase 2, registration polish (Phase 3), and account recovery + final polish (Phase 4) are complete. The remaining planned work:
 
-### Phase 4, account recovery and final polish
+### Phase 5, automated and browser testing
 
-1. Design the account recovery flow for the existing Forgot Password page.
-2. Final validation sweep across all backend routes.
-3. Atomic return transactions, borrowing is already protected.
-4. Persistent rate-limit storage and theme preference.
-5. Automated and browser testing.
+1. Automated backend regression tests.
+2. End-to-end browser tests for the authentication and recovery flows.
 
 ## Current integration notes
 
@@ -272,4 +291,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the thirteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
+This README is part of the fifteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.

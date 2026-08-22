@@ -6,6 +6,7 @@ const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const respondError = require("../utils/respondError");
 const normalizePhone = require("../utils/phone");
+const { isEmail, nonEmpty } = require("../utils/validate");
 const router = express.Router();
 
 // Create borrower + login account
@@ -29,6 +30,18 @@ router.post(
 
       if (!valid) {
         return res.status(400).json({ error: "Invalid phone number" });
+      }
+
+      if (!isEmail(email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+
+      if (typeof password !== "string" || password.length < 8) {
+        return res.status(400).json({ error: "Password too short" });
+      }
+
+      if (!nonEmpty(firstName) || !nonEmpty(lastName)) {
+        return res.status(400).json({ error: "First and last name are required" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);

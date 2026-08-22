@@ -4,6 +4,7 @@ const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const logActivity = require("../utils/activityLog");
+const { isEmail, isDomain } = require("../utils/validate");
 
 const router = express.Router();
 
@@ -67,6 +68,14 @@ router.put(
       const cleanEmails = Array.isArray(emails)
         ? emails.map((email) => email.trim().toLowerCase()).filter(Boolean)
         : DEFAULT_EMAIL_ACCESS.emails;
+
+      if (cleanEmails.some((email) => !isEmail(email))) {
+        return res.status(400).json({ error: "One or more email addresses are invalid" });
+      }
+
+      if (cleanDomains.some((domain) => !isDomain(domain))) {
+        return res.status(400).json({ error: "One or more domains are invalid" });
+      }
 
       await setSetting("emailAccessEnabled", enabled ? "true" : "false");
       await setSetting("emailAccessDomains", JSON.stringify(cleanDomains));
