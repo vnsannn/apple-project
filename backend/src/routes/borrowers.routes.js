@@ -5,6 +5,7 @@ const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const respondError = require("../utils/respondError");
+const normalizePhone = require("../utils/phone");
 const router = express.Router();
 
 // Create borrower + login account
@@ -24,6 +25,12 @@ router.post(
         qrCode,
       } = req.body;
 
+      const { valid, value: normalizedPhone } = normalizePhone(phone);
+
+      if (!valid) {
+        return res.status(400).json({ error: "Invalid phone number" });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const borrower = await prisma.borrower.create({
@@ -31,7 +38,7 @@ router.post(
           lastName,
           firstName,
           middleName,
-          phone,
+          phone: normalizedPhone,
           qrCode,
           user: {
             create: {
@@ -130,22 +137,36 @@ router.put(
       const {
         lastName,
         firstName,
-        middleInit,
+        middleName,
+        phone,
         qrCode,
         status,
         violationCount,
       } = req.body;
 
+      const { valid, value: normalizedPhone } = normalizePhone(phone);
+
+      if (!valid) {
+        return res.status(400).json({ error: "Invalid phone number" });
+      }
+
+      const data = {
+        lastName,
+        firstName,
+        middleName,
+        qrCode,
+        status,
+        violationCount,
+      };
+
+      // Only touch phone when the caller sent it; undefined means "leave as-is".
+      if (phone !== undefined) {
+        data.phone = normalizedPhone;
+      }
+
       const borrower = await prisma.borrower.update({
         where: { id: Number(req.params.id) },
-        data: {
-          lastName,
-          firstName,
-          middleInit,
-          qrCode,
-          status,
-          violationCount,
-        },
+        data,
         include: {
           user: {
             select: {

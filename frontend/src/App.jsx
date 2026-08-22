@@ -9,8 +9,20 @@ import "./App.css";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+const THEME_KEY = "slims_theme";
+
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved === "dark";
+  } catch {
+    // localStorage unavailable (private mode, etc.) — default to light
+  }
+  return false;
+}
+
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(getInitialTheme);
   const location = useLocation();
 
   const isRegister = location.pathname === "/register";
@@ -18,7 +30,15 @@ function App() {
   const isDashboard = location.pathname.startsWith("/dashboard");
 
   function toggleTheme() {
-    setDarkMode((current) => !current);
+    setDarkMode((current) => {
+      const next = !current;
+      try {
+        localStorage.setItem(THEME_KEY, next ? "dark" : "light");
+      } catch {
+        // ignore storage failures
+      }
+      return next;
+    });
   }
 
   const welcomeLabel = isRegister

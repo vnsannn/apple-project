@@ -5,6 +5,7 @@ const prisma = require("../config/prisma");
 const router = express.Router();
 const checkEmailAccess = require("../utils/emailAccess");
 const logActivity = require("../utils/activityLog");
+const normalizePhone = require("../utils/phone");
 
 // Public: tells the frontend if registration is open or domain-restricted
 router.get("/registration-policy", async (req, res) => {
@@ -59,17 +60,11 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    let normalizedPhone = null;
+    const { valid: phoneValid, value: normalizedPhone } =
+      normalizePhone(cleanPhone);
 
-    if (cleanPhone) {
-      let digits = cleanPhone.replace(/\D/g, "");
-      if (digits.startsWith("0")) digits = digits.slice(1);
-
-      if (!/^9\d{9}$/.test(digits)) {
-        return res.status(400).json({ error: "Invalid phone number" });
-      }
-
-      normalizedPhone = `+63 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    if (!phoneValid) {
+      return res.status(400).json({ error: "Invalid phone number" });
     }
 
     if (!cleanPassword) {
