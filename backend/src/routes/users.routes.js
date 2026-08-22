@@ -54,6 +54,26 @@ router.put(
       }
 
       const userId = Number(req.params.id);
+      if (!Number.isInteger(userId)) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const target = await prisma.user.findUnique({ where: { id: userId } });
+      if (!target) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Last-master guard: never leave the system with zero masters. If the
+      // target is currently a master and is being changed away from master,
+      // require at least one OTHER master to remain.
+      if (target.role === "master" && role !== "master") {
+        const masterCount = await prisma.user.count({ where: { role: "master" } });
+        if (masterCount <= 1) {
+          return res
+            .status(400)
+            .json({ error: "Cannot demote the last master account" });
+        }
+      }
 
       const user = await prisma.user.update({
         where: { id: userId },

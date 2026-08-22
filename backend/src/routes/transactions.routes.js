@@ -11,6 +11,9 @@ const router = express.Router();
 // Auto-ban a borrower after this many violations (damaged / lost returns).
 const VIOLATION_BAN_THRESHOLD = 3;
 
+// Hard cap on how many books a borrower may have out at once.
+const BORROW_LIMIT = 5;
+
 // Borrow a book copy
 // Borrow a book copy
 router.post(
@@ -60,6 +63,32 @@ router.post(
         return res.status(400).json({ error: "Book copy is not available" });
       }
 
+      // Hard borrow-limit: a borrower can't have more than BORROW_LIMIT books
+      // out at once. Count their currently-open loans.
+      const openByBorrower = await prisma.transaction.count({
+        where: { borrowerId: borrower.id, returnedAt: null },
+      });
+      if (openByBorrower >= BORROW_LIMIT) {
+        return res
+          .status(400)
+          .json({ error: `Borrower already has ${BORROW_LIMIT} books out` });
+      }
+
+      // Reservation FIFO gate (title-level). If this title has a queued
+      // reservation, only the front-of-queue borrower may borrow a copy; anyone
+      // else waits their turn. Fulfills the reservation when the front borrower
+      // actually borrows.
+      const queued = await prisma.reservation.findMany({
+        where: { bookId: bookCopy.bookId, status: "queued" },
+        orderBy: { reservedAt: "asc" },
+      });
+      let frontReservation = queued[0] || null;
+      if (frontReservation && frontReservation.borrowerId !== borrower.id) {
+        return res
+          .status(409)
+          .json({ error: "This title is reserved for the next borrower in line" });
+      }
+
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
 
@@ -74,6 +103,16 @@ router.post(
           const conflict = new Error("Book copy is not available");
           conflict.status = 400;
           throw conflict;
+        }
+
+        // If the borrower is the front of the reservation queue, the loan
+        // fulfils their reservation. Mark it claimed (inside the same tx so the
+        // queue state and the loan stay consistent).
+        if (frontReservation) {
+          await tx.reservation.update({
+            where: { id: frontReservation.id },
+            data: { status: "claimed", expiresAt: new Date() },
+          });
         }
 
         return tx.transaction.create({

@@ -2,6 +2,23 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 20 - 2026-08-22
+
+### Auth-UI hardening + borrow-flow integrity (reservation queue, borrow limit, last-master guard)
+
+### Added
+
+- **Logout navigates explicitly.** The Dashboard now calls `navigate("/login", { replace: true })` in the logout handler instead of relying on a side-effect re-render redirect.
+- **Browser-safe JWT payload decode.** `AuthContext` now normalizes URL-safe base64 back to standard base64 (JWTs use `-`/`_`, which a browser's `atob` rejects) and decodes UTF-8, so login can't break on unusual email addresses.
+- **Last-master guard.** A master can no longer be demoted if they are the last remaining master (returns `400 "Cannot demote the last master account"`).
+- **Hard borrow-limit.** A borrower is capped at `BORROW_LIMIT` (5) concurrent books out; the 6th open loan is rejected with `400 "Borrower already has 5 books out"`.
+- **Reservation FIFO fulfilment on borrow.** When a title has a queued reservation, only the front-of-queue borrower may borrow a copy (others get `409 "This title is reserved..."`); when the front borrower borrows, their reservation is marked `claimed` inside the same transaction.
+
+### Changed
+
+- `PUT /api/v1/users/:id/role` validates a non-numeric `:id` (404) and enforces the last-master rule.
+- The borrow route now also runs the borrow-limit and reservation-queue checks before the atomic claim.
+
 ## Commit 19 - 2026-08-22
 
 ### Authorization hardening (broken access control / PII exposure)

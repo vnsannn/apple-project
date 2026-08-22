@@ -2,6 +2,19 @@ import { request } from "../api/client.js";
 import { useEffect, useState } from "react";
 import { AuthContext } from "./useAuth.js";
 
+// Decode a JWT payload. JWTs use URL-safe base64 ("-" and "_" instead of "+"
+// and "/"), which a browser's `atob` rejects. Normalize to standard base64,
+// pad, then decode to UTF-8. Returns the parsed payload object.
+function decodeJwtPayload(token) {
+  const b64 = String(token).split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+  const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+  const bytes = atob(padded);
+  const json = new TextDecoder().decode(
+    new Uint8Array(Array.from(bytes, (c) => c.charCodeAt(0))),
+  );
+  return JSON.parse(json);
+}
+
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("slims_token"));
   const [user, setUser] = useState(() => {
@@ -26,7 +39,7 @@ function AuthProvider({ children }) {
       body: JSON.stringify({ email, password }),
     });
 
-    const payload = JSON.parse(atob(data.token.split(".")[1]));
+    const payload = decodeJwtPayload(data.token);
 
     setToken(data.token);
     setUser({ id: payload.id, email: payload.email, role: payload.role });
