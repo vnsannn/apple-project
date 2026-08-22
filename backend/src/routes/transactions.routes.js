@@ -63,27 +63,15 @@ router.post(
         return res.status(400).json({ error: "Book copy is not available" });
       }
 
-      // Hard borrow-limit: a borrower can't have more than BORROW_LIMIT books
-      // out at once. Count their currently-open loans.
-      const openByBorrower = await prisma.transaction.count({
-        where: { borrowerId: borrower.id, returnedAt: null },
-      });
-      if (openByBorrower >= BORROW_LIMIT) {
-        return res
-          .status(400)
-          .json({ error: `Borrower already has ${BORROW_LIMIT} books out` });
-      }
-
-      // Reservation FIFO gate (title-level). If this title has a queued
-      // reservation, only the front-of-queue borrower may borrow a copy; anyone
-      // else waits their turn. Fulfills the reservation when the front borrower
-      // actually borrows.
+      // Reservation FIFO gate (title-level). We find the front-of-queue here
+      // for the friendly early error, but re-verify it atomically inside the
+      // transaction below so it can't race with a concurrent borrow.
       const queued = await prisma.reservation.findMany({
         where: { bookId: bookCopy.bookId, status: "queued" },
         orderBy: { reservedAt: "asc" },
       });
-      let frontReservation = queued[0] || null;
-      if (frontReservation && frontReservation.borrowerId !== borrower.id) {
+      const earlyFront = queued[0] || null;
+      if (earlyFront && earlyFront.borrowerId !== borrower.id) {
         return res
           .status(409)
           .json({ error: "This title is reserved for the next borrower in line" });
@@ -93,6 +81,31 @@ router.post(
       dueDate.setDate(dueDate.getDate() + 7);
 
       const transaction = await prisma.$transaction(async (tx) => {
+        // Atomic borrow-limit: re-count inside the transaction so two concurrent
+        // borrows from the same borrower can't both pass the limit check. The
+        // row lock taken by the copy claim serializes these writes.
+        const openByBorrower = await tx.transaction.count({
+          where: { borrowerId: borrower.id, returnedAt: null },
+        });
+        if (openByBorrower >= BORROW_LIMIT) {
+          const conflict = new Error(`Borrower already has ${BORROW_LIMIT} books out`);
+          conflict.status = 400;
+          throw conflict;
+        }
+
+        // Re-resolve the front of the reservation queue inside the transaction
+        // so the gate (and the claim below) can't act on a stale queue read.
+        const liveQueued = await tx.reservation.findMany({
+          where: { bookId: bookCopy.bookId, status: "queued" },
+          orderBy: { reservedAt: "asc" },
+        });
+        const liveFront = liveQueued[0] || null;
+        if (liveFront && liveFront.borrowerId !== borrower.id) {
+          const conflict = new Error("This title is reserved for the next borrower in line");
+          conflict.status = 409;
+          throw conflict;
+        }
+
         // Atomic claim: only succeeds if the copy is STILL available
         const claimed = await tx.bookCopy.updateMany({
           where: { id: bookCopy.id, status: "available" },
@@ -108,9 +121,9 @@ router.post(
         // If the borrower is the front of the reservation queue, the loan
         // fulfils their reservation. Mark it claimed (inside the same tx so the
         // queue state and the loan stay consistent).
-        if (frontReservation) {
+        if (liveFront) {
           await tx.reservation.update({
-            where: { id: frontReservation.id },
+            where: { id: liveFront.id },
             data: { status: "claimed", expiresAt: new Date() },
           });
         }

@@ -46,7 +46,7 @@ router.get("/registration-policy", async (req, res) => {
 router.post("/register", async (req, res) => {
   try {
     const { email, password, firstName, lastName, middleName, phone } =
-      req.body;
+      req.body ?? {};
 
     const cleanEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -152,7 +152,7 @@ router.post("/register", async (req, res) => {
 // Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body ?? {};
 
     const cleanEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";

@@ -247,6 +247,18 @@ router.delete(
         return res.status(404).json({ error: "Borrower not found" });
       }
 
+      // Guard against the delete-with-open-loan deadlock: deleting a borrower
+      // cascades away their open Transaction rows but leaves their borrowed
+      // copies stuck on status="borrowed" forever (nothing can return them).
+      const openLoans = await prisma.transaction.count({
+        where: { borrowerId: borrower.id, returnedAt: null },
+      });
+      if (openLoans > 0) {
+        return res
+          .status(400)
+          .json({ error: "Borrower has active loans. Return the books before deleting the account." });
+      }
+
       await prisma.user.delete({
         where: { id: borrower.userId },
       });

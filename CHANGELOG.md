@@ -2,6 +2,20 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 21 - 2026-08-22
+
+### Borrow-flow atomicity + borrower-delete deadlock fix + body handling + dead-code cleanup
+
+### Fixed
+
+- **Borrow-limit and reservation-queue checks are now atomic.** The borrow-limit count and the front-of-queue reservation lookup were running *before* the transaction opened, so two concurrent borrows from the same borrower could both pass the limit check (landing them at limit + 1 in a rare race). Both re-checks now run inside the `$transaction` alongside the copy claim, so the limit and the FIFO gate are enforced atomically.
+- **Borrower-delete deadlock (data loss).** Deleting a borrower with an open loan used to cascade away the open `Transaction` but leave the borrowed copy permanently stuck on `status="borrowed"` (nothing could return or re-borrow it). Deleting now returns `400 "Borrower has active loans..."` until the books are returned — the copy can never be orphaned.
+- **Inconsistent 500 on a missing body.** `POST /login` and `POST /register` destructured `req.body` directly, so a request with a non-JSON body (e.g. `text/plain`, or no content-type) crashed with a 500 instead of the normal 400 response. Both now default to `{}` when `req.body` is undefined.
+
+### Removed
+
+- **Dead `withAuth` export** in `frontend/src/api/client.js` — defined and exported but never used anywhere.
+
 ## Commit 20 - 2026-08-22
 
 ### Auth-UI hardening + borrow-flow integrity (reservation queue, borrow limit, last-master guard)

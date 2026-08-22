@@ -53,7 +53,9 @@ Login and registration are fully connected to the backend, including per-field e
 - Atomic borrow and return with conditional claims to prevent double loans
 - Borrow flow blocks banned borrowers (`403 "Borrower account is banned"`)
 - Borrow flow also rejects a copy that already has an open loan, even if marked available
-- Hard per-borrower borrow limit (max 5 concurrent books out)
+- Hard per-borrower borrow limit (max 5 concurrent books out, enforced atomically)
+- Borrow-limit and reservation-queue checks run inside the same transaction as the copy claim, so concurrent borrows can't overshoot the limit or skip the queue
+- Deleting a borrower is blocked while they have open loans (prevents permanently orphaning a borrowed copy)
 - Reservation FIFO fulfilment on borrow: the front-of-queue borrower is served first, and their reservation is claimed on the loan
 - Role-scoped access control: member rosters, borrow logs, and reservations are staff-only; borrowers view only their own profile via `/api/v1/borrowers/me`
 - Last-master guard prevents demoting the final master account
@@ -304,4 +306,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the twentieth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
+This README is part of the twenty-first project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.

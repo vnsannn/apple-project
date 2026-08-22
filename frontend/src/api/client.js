@@ -15,15 +15,4 @@ async function request(path, options = {}) {
   return data;
 }
 
-function withAuth(token, options = {}) {
-  return {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-      Authorization: `Bearer ${token}`,
-    },
-  };
-}
-
-export { API_URL, request, withAuth };
+export { API_URL, request };
