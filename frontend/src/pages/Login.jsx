@@ -1,23 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import EmailPolicyTooltip from "../components/EmailPolicyTooltip.jsx";
 import PasswordInput from "../components/PasswordInput.jsx";
 import { useAuth } from "../context/useAuth.js";
-import { API_URL } from "../api/client.js";
 import "./Auth.css";
-
-const RETRY_KEY = "slims_retry_until";
-
-function getRemainingSeconds() {
-  const until = Number(localStorage.getItem(RETRY_KEY));
-
-  if (!until || until <= Date.now()) {
-    localStorage.removeItem(RETRY_KEY);
-    return 0;
-  }
-
-  return Math.ceil((until - Date.now()) / 1000);
-}
+import useRateLock, { formatCountdown } from "../hooks/useRateLock.js";
 
 function Login() {
   const { login } = useAuth();
@@ -27,45 +14,9 @@ function Login() {
   const [btnShake, setBtnShake] = useState(false);
   const [btnState, setBtnState] = useState("");
   const [busy, setBusy] = useState(false);
-  const [retrySeconds, setRetrySeconds] = useState(getRemainingSeconds);
+  const { locked, retrySeconds, startLockdown } = useRateLock();
   const shakeTimer = useRef(null);
   const messageTimer = useRef(null);
-  const locked = retrySeconds > 0;
-
-  useEffect(() => {
-    if (getRemainingSeconds() <= 0) return undefined;
-
-    const controller = new AbortController();
-
-    fetch(`${API_URL}/api/v1/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (res.ok || res.status === 400) {
-          localStorage.removeItem(RETRY_KEY);
-          setRetrySeconds(0);
-        }
-      })
-      .catch(() => {});
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    if (retrySeconds <= 0) {
-      localStorage.removeItem(RETRY_KEY);
-      return undefined;
-    }
-
-    const timer = setTimeout(
-      () => setRetrySeconds((s) => Math.max(0, s - 1)),
-      1000,
-    );
-    return () => clearTimeout(timer);
-  }, [retrySeconds]);
 
   function showError(fields, message) {
     clearTimeout(shakeTimer.current);
@@ -139,17 +90,12 @@ function Login() {
       showError(fields, err.message);
 
       if (err.status === 429) {
-        const seconds = err.retryAfter > 0 ? err.retryAfter : 900;
-        localStorage.setItem(RETRY_KEY, String(Date.now() + seconds * 1000));
-        setRetrySeconds(seconds);
+        startLockdown(err.retryAfter > 0 ? err.retryAfter : 900);
       }
 
       setBusy(false);
     }
   }
-
-  const countdownMinutes = Math.floor(retrySeconds / 60);
-  const countdownSeconds = String(retrySeconds % 60).padStart(2, "0");
 
   return (
     <section className="auth-view login-view">
@@ -206,7 +152,7 @@ function Login() {
             disabled={busy || locked}
           >
             {locked
-              ? `Too many attempts. Retry in ${countdownMinutes}:${countdownSeconds}`
+              ? `Too many attempts. Retry in ${formatCountdown(retrySeconds)}`
               : btnState === "success"
                 ? "Success"
                 : busy

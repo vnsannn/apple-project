@@ -318,6 +318,36 @@
   outline-offset: 1px;
 }
 
+.phone-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.phone-input-wrap input {
+  padding-left: 44px;
+}
+
+.phone-input-wrap:focus-within {
+  transform: translateY(-1px);
+}
+
+.phone-prefix {
+  position: absolute;
+  top: calc(50% + 1px);
+  left: 13px;
+  z-index: 1;
+  color: rgba(39, 28, 44, 0.55);
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.auth-field .phone-input-wrap input:focus {
+  transform: none;
+}
+
 .auth-field input::placeholder {
   color: rgba(39, 28, 44, 0.48);
 }
@@ -368,8 +398,9 @@
   }
 }
 
-.auth-field.auth-shake > input,
-.auth-field.auth-shake .password-input-wrap {
+.auth-field.auth-shake>input,
+.auth-field.auth-shake .password-input-wrap,
+.auth-field.auth-shake .phone-input-wrap {
   animation: auth-shake 0.5s ease;
 }
 
@@ -882,6 +913,10 @@ body:has(.app-shell[data-theme="dark"]) .info-tooltip-content.tooltip-top::after
 
 body:has(.app-shell[data-theme="dark"]) .info-tooltip-content.tooltip-bottom::after {
   border-bottom-color: rgba(36, 29, 43, 0.98);
+}
+
+.app-shell[data-theme="dark"] .phone-prefix {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ================================

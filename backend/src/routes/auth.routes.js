@@ -36,27 +36,54 @@ router.post("/register", async (req, res) => {
       typeof email === "string" ? email.trim().toLowerCase() : "";
     const cleanFirst = typeof firstName === "string" ? firstName.trim() : "";
     const cleanLast = typeof lastName === "string" ? lastName.trim() : "";
+    const cleanPassword = typeof password === "string" ? password : "";
+    const cleanPhone = typeof phone === "string" ? phone.trim() : "";
+
+    if (!cleanFirst && !cleanLast && !cleanEmail && !cleanPassword) {
+      return res.status(400).json({ error: "Enter your info" });
+    }
+
+    if (!cleanFirst) {
+      return res.status(400).json({ error: "Enter first name" });
+    }
+
+    if (!cleanLast) {
+      return res.status(400).json({ error: "Enter last name" });
+    }
+
+    if (!cleanEmail) {
+      return res.status(400).json({ error: "Enter email" });
+    }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      return res.status(400).json({ error: "Enter a valid email address" });
+      return res.status(400).json({ error: "Invalid email format" });
     }
 
-    if (typeof password !== "string" || password.length < 8) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 8 characters" });
+    let normalizedPhone = null;
+
+    if (cleanPhone) {
+      let digits = cleanPhone.replace(/\D/g, "");
+      if (digits.startsWith("0")) digits = digits.slice(1);
+
+      if (!/^9\d{9}$/.test(digits)) {
+        return res.status(400).json({ error: "Invalid phone number" });
+      }
+
+      normalizedPhone = `+63 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
     }
 
-    if (!cleanFirst || !cleanLast) {
-      return res
-        .status(400)
-        .json({ error: "First and last name are required" });
+    if (!cleanPassword) {
+      return res.status(400).json({ error: "Enter password" });
+    }
+
+    if (cleanPassword.length < 8) {
+      return res.status(400).json({ error: "Password too short" });
     }
 
     const access = await checkEmailAccess(cleanEmail);
 
-    if (!access.allowed) {
-      return res.status(403).json({ error: access.reason });
+    if (access.enabled && !access.allowed) {
+      return res.status(403).json({ error: "Not whitelisted domain" });
     }
 
     const lastBorrower = await prisma.borrower.findFirst({
@@ -66,7 +93,7 @@ router.post("/register", async (req, res) => {
 
     const qrCode = `BOR-${String((lastBorrower?.id ?? 0) + 1).padStart(3, "0")}`;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(cleanPassword, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -81,8 +108,7 @@ router.post("/register", async (req, res) => {
               typeof middleName === "string" && middleName.trim()
                 ? middleName.trim()
                 : null,
-            phone:
-              typeof phone === "string" && phone.trim() ? phone.trim() : null,
+            phone: normalizedPhone,
             qrCode,
           },
         },
@@ -103,12 +129,10 @@ router.post("/register", async (req, res) => {
     });
   } catch (err) {
     if (err.code === "P2002" && err.meta?.target?.includes("qrCode")) {
-      return res
-        .status(409)
-        .json({ error: "Registration conflict, please try again" });
+      return res.status(409).json({ error: "Registration conflict" });
     }
     if (err.code === "P2002") {
-      return res.status(409).json({ error: "Email is already registered" });
+      return res.status(409).json({ error: "Email already registered" });
     }
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });

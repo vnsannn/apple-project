@@ -2,6 +2,29 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 13 - 2026-08-22
+
+### Registration polish (Phase 3)
+
+### Added
+
+- Registration message dictionary aligned with the login error style (enter info, enter first/last/email/password, invalid email format, invalid phone number, not whitelisted domain, email already registered, password too short, registration conflict)
+- Phone number normalization: strips non-digits, drops a leading zero, and stores the spaced `+63 912 345 6789` format
+- Shared rate-limit lock hook (`useRateLock`) used by both login and registration
+- Registration inherits the full error system: per-field frame arrays, shake + red fields + red button, message-on-button, and timeout refs
+- Client-side email-format validation judged before the optional phone check
+- Fused `+63` phone prefix that cannot be edited or deleted
+- Client-side password confirmation mismatch to the confirm field
+
+### Changed
+
+- Registration now lives behind the same rate-limit lock and `RETRY_KEY` as login, so a lockout is one door across both pages
+- Login refactored to rent the shared `useRateLock` hook instead of owning its own lock code
+
+### Fixed
+
+- Registration previously judged the optional phone before validating email format; email shape is now checked first
+
 ## Commit 12 - 2026-08-22
 
 ### Apply audit fixes

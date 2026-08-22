@@ -78,7 +78,7 @@ function EmailPolicyTooltip() {
                   </span>
                 ))}
               </strong>
-              Individually approved addresses may also register.
+              <br />Individually approved addresses may also register.
             </>
           ) : (
             "Email access is restricted. Only addresses approved by the library can create an account."
