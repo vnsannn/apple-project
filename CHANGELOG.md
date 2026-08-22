@@ -2,6 +2,23 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 19 - 2026-08-22
+
+### Authorization hardening (broken access control / PII exposure)
+
+### Fixed
+
+- **Broken access control closed.** Four endpoints were reachable by any signed-in borrower and exposed other members' personal data; now restricted to staff (`librarian`/`master`):
+  - `GET /api/v1/borrowers` (full member roster: names/emails/phones) — previously returned `200` to any borrower
+  - `GET /api/v1/borrowers/:id` (a member's full profile + transactions + reservations — an IDOR read of any member) — now staff-only
+  - `GET /api/v1/transactions` (the entire borrow log) — now staff-only
+  - `GET /api/v1/reservations` (all reservations) — now staff-only
+- Non-numeric `:id` on borrowers GET/PUT/DELETE now returns `404 "Borrower not found"` instead of a generic `400` (consistent with the books routes).
+
+### Added
+
+- `GET /api/v1/borrowers/me` — lets a borrower read **only their own** profile, transactions, and reservations. This is the secure self-service view the dashboard will use for a member.
+
 ## Commit 18 - 2026-08-22
 
 ### Pre-dashboard: audit fixes, dormant-schema features, dead-code cleanup

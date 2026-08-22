@@ -209,8 +209,8 @@ router.post(
   },
 );
 
-// List transactions
-router.get("/", authenticate, async (req, res) => {
+// List transactions (staff only — borrowers should not see everyone's borrow log)
+router.get("/", authenticate, requireRole("librarian", "master"), async (req, res) => {
   try {
     await refreshOverdue();
     const transactions = await prisma.transaction.findMany({

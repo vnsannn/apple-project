@@ -86,8 +86,28 @@ router.post(
   },
 );
 
-// List borrowers
-router.get("/", authenticate, async (req, res) => {
+// A borrower can read their own profile (no one else's). Staff see everyone.
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const borrower = await prisma.borrower.findUnique({
+      where: { userId: req.user.id },
+      include: {
+        user: { select: { id: true, email: true, role: true, createdAt: true } },
+        transactions: true,
+        reservations: true,
+      },
+    });
+    if (!borrower) {
+      return res.status(404).json({ error: "Borrower not found" });
+    }
+    res.json(borrower);
+  } catch (err) {
+    respondError(res, err, { duplicate: "Email or QR Code already in use" });
+  }
+});
+
+// List borrowers (staff only — the roster is not public member data)
+router.get("/", authenticate, requireRole("librarian", "master"), async (req, res) => {
   try {
     const borrowers = await prisma.borrower.findMany({
       include: {
@@ -111,11 +131,15 @@ router.get("/", authenticate, async (req, res) => {
   }
 });
 
-// Get one borrower
-router.get("/:id", authenticate, async (req, res) => {
+// Get one borrower (staff only — a borrower may only view themselves via /me)
+router.get("/:id", authenticate, requireRole("librarian", "master"), async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(404).json({ error: "Borrower not found" });
+    }
     const borrower = await prisma.borrower.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: {
         user: {
           select: {
@@ -177,8 +201,13 @@ router.put(
         data.phone = normalizedPhone;
       }
 
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) {
+        return res.status(404).json({ error: "Borrower not found" });
+      }
+
       const borrower = await prisma.borrower.update({
-        where: { id: Number(req.params.id) },
+        where: { id },
         data,
         include: {
           user: {
@@ -206,8 +235,12 @@ router.delete(
   requireRole("librarian", "master"),
   async (req, res) => {
     try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) {
+        return res.status(404).json({ error: "Borrower not found" });
+      }
       const borrower = await prisma.borrower.findUnique({
-        where: { id: Number(req.params.id) },
+        where: { id },
       });
 
       if (!borrower) {

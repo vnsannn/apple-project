@@ -53,6 +53,7 @@ Login and registration are fully connected to the backend, including per-field e
 - Atomic borrow and return with conditional claims to prevent double loans
 - Borrow flow blocks banned borrowers (`403 "Borrower account is banned"`)
 - Borrow flow also rejects a copy that already has an open loan, even if marked available
+- Role-scoped access control: member rosters, borrow logs, and reservations are staff-only; borrowers view only their own profile via `/api/v1/borrowers/me`
 - Overdue flagging for open past-due loans, refreshed when the transaction list is read
 - Violation counting on damaged/lost returns, with automatic ban after a threshold
 - Title-level reservation API (queued/active/claimed/expired/cancelled), duplicate-safe
@@ -300,4 +301,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the eighteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
+This README is part of the nineteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.

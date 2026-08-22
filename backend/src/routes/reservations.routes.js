@@ -72,8 +72,8 @@ router.post(
   },
 );
 
-// List reservations.
-router.get("/", authenticate, async (req, res) => {
+// List reservations (staff only — a borrower may only see their own via /me)
+router.get("/", authenticate, requireRole("librarian", "master"), async (req, res) => {
   try {
     const reservations = await prisma.reservation.findMany({
       include: {
