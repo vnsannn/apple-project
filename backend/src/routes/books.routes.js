@@ -3,7 +3,7 @@ const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const logActivity = require("../utils/activityLog");
-
+const respondError = require("../utils/respondError");
 const router = express.Router();
 
 // Create a book (title + its copies)
@@ -36,7 +36,7 @@ router.post(
 
       res.status(201).json(book);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "A book with this ISBN or QR code already exists" });
     }
   },
 );
@@ -49,7 +49,7 @@ router.get("/", authenticate, async (req, res) => {
     });
     res.json(books);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err, { duplicate: "A book with this ISBN or QR code already exists" });
   }
 });
 
@@ -63,7 +63,7 @@ router.get("/:id", authenticate, async (req, res) => {
     if (!book) return res.status(404).json({ error: "Book not found" });
     res.json(book);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err, { duplicate: "A book with this ISBN or QR code already exists" });
   }
 });
 
@@ -81,7 +81,7 @@ router.put(
       });
       res.json(book);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "A book with this ISBN or QR code already exists" });
     }
   },
 );
@@ -114,7 +114,7 @@ router.delete(
 
       res.json({ message: "Book deleted" });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "A book with this ISBN or QR code already exists" });
     }
   },
 );

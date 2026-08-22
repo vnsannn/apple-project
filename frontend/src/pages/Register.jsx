@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import EmailPolicyTooltip from "../components/EmailPolicyTooltip.jsx";
 import InfoTooltip from "../components/InfoTooltip.jsx";
 import PasswordInput from "../components/PasswordInput.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/useAuth.js";
 import "./Auth.css";
 
 function Register() {

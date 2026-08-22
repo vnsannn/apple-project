@@ -36,8 +36,8 @@ Login and registration are fully connected to the backend, including per-field e
 - Borrower profiles created at self-registration with auto-generated QR codes
 - Book and book-copy management
 - Borrower management
-- QR-based borrow and return transactions
-- Activity logging for important operations
+- QR-based borrow and return transactions with atomic claiming against double loans
+- Activity logging for important operations, including self-registrations
 - Master-only user role management
 - Configurable email access using approved domains and individual addresses
 - Security headers through helmet
@@ -45,6 +45,8 @@ Login and registration are fully connected to the backend, including per-field e
 - CORS locked to the configured frontend origin
 - Public registration-policy endpoint exposing only the enabled flag and approved domains
 - Input validation on authentication routes
+- Clean error responses across all API routes
+- Startup guard for required environment secrets
 - PostgreSQL database managed through Prisma
 
 ### Authentication frontend
@@ -237,7 +239,7 @@ Login Phase 2 is complete. Remaining authentication work:
 
 1. Design the account recovery flow for the existing Forgot Password page.
 2. Final validation sweep across all backend routes.
-3. Atomic borrow and return transactions.
+3. Atomic return transactions, borrowing is already protected.
 4. Persistent rate-limit storage and theme preference.
 5. Automated and browser testing.
 
@@ -271,4 +273,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the eleventh project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the Login Phase 2 update summary.
+This README is part of the twelfth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the audit fixes summary.

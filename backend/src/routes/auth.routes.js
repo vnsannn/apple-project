@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const prisma = require("../config/prisma");
 const router = express.Router();
 const checkEmailAccess = require("../utils/emailAccess");
+const logActivity = require("../utils/activityLog");
 
 // Public: tells the frontend if registration is open or domain-restricted
 router.get("/registration-policy", async (req, res) => {
@@ -87,6 +88,12 @@ router.post("/register", async (req, res) => {
         },
       },
     });
+
+    await logActivity(
+      null,
+      "SELF_REGISTER",
+      `${cleanFirst} ${cleanLast} (${qrCode})`,
+    );
 
     res.status(201).json({
       id: user.id,

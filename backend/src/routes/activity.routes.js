@@ -1,5 +1,5 @@
 const express = require("express");
-
+const respondError = require("../utils/respondError");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
@@ -18,7 +18,7 @@ router.get("/", authenticate, requireRole("master"), async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err);
   }
 });
 

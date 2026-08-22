@@ -4,7 +4,7 @@ const logActivity = require("../utils/activityLog");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
-
+const respondError = require("../utils/respondError");
 const router = express.Router();
 
 // Create borrower + login account
@@ -61,7 +61,7 @@ router.post(
 
       res.status(201).json(borrower);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "Email or QR Code already in use" });
     }
   },
 );
@@ -87,7 +87,7 @@ router.get("/", authenticate, async (req, res) => {
 
     res.json(borrowers);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err, { duplicate: "Email or QR Code already in use" });
   }
 });
 
@@ -116,7 +116,7 @@ router.get("/:id", authenticate, async (req, res) => {
 
     res.json(borrower);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err, { duplicate: "Email or QR Code already in use" });
   }
 });
 
@@ -160,7 +160,7 @@ router.put(
 
       res.json(borrower);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "Email or QR Code already in use" });
     }
   },
 );
@@ -192,7 +192,7 @@ router.delete(
 
       res.json({ message: "Borrower deleted" });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err, { duplicate: "Email or QR Code already in use" });
     }
   },
 );

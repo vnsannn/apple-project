@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import EmailPolicyTooltip from "../components/EmailPolicyTooltip.jsx";
 import PasswordInput from "../components/PasswordInput.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/useAuth.js";
 import { API_URL } from "../api/client.js";
 import "./Auth.css";
 
@@ -33,15 +33,18 @@ function Login() {
   const locked = retrySeconds > 0;
 
   useEffect(() => {
-    if (retrySeconds <= 0) return undefined;
+    if (getRemainingSeconds() <= 0) return undefined;
 
     const controller = new AbortController();
 
-    fetch(`${API_URL}/api/v1/auth/registration-policy`, {
+    fetch(`${API_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
       signal: controller.signal,
     })
       .then((res) => {
-        if (res.ok) {
+        if (res.ok || res.status === 400) {
           localStorage.removeItem(RETRY_KEY);
           setRetrySeconds(0);
         }

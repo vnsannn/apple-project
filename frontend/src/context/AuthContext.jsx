@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
 import { request } from "../api/client.js";
-
-const AuthContext = createContext(null);
+import { useEffect, useState } from "react";
+import { AuthContext } from "./useAuth.js";
 
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("slims_token"));
@@ -64,8 +63,4 @@ function AuthProvider({ children }) {
   );
 }
 
-function useAuth() {
-  return useContext(AuthContext);
-}
-
-export { AuthProvider, useAuth };
+export { AuthProvider };

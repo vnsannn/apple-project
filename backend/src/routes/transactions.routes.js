@@ -3,9 +3,10 @@ const logActivity = require("../utils/activityLog");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
-
+const respondError = require("../utils/respondError");
 const router = express.Router();
 
+// Borrow a book copy
 // Borrow a book copy
 router.post(
   "/borrow",
@@ -26,15 +27,6 @@ router.post(
 
       const borrower = await prisma.borrower.findUnique({
         where: { qrCode: borrowerQrCode },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              role: true,
-            },
-          },
-        },
       });
 
       if (!borrower) {
@@ -48,35 +40,34 @@ router.post(
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
 
-      const transaction = await prisma.transaction.create({
-        data: {
-          bookCopyId: bookCopy.id,
-          borrowerId: borrower.id,
-          dueDate,
-        },
-        include: {
-          bookCopy: {
-            include: {
-              book: true,
-            },
+      const transaction = await prisma.$transaction(async (tx) => {
+        // Atomic claim: only succeeds if the copy is STILL available
+        const claimed = await tx.bookCopy.updateMany({
+          where: { id: bookCopy.id, status: "available" },
+          data: { status: "borrowed" },
+        });
+
+        if (claimed.count === 0) {
+          const conflict = new Error("Book copy is not available");
+          conflict.status = 400;
+          throw conflict;
+        }
+
+        return tx.transaction.create({
+          data: {
+            bookCopyId: bookCopy.id,
+            borrowerId: borrower.id,
+            dueDate,
           },
-          borrower: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  role: true,
-                },
+          include: {
+            bookCopy: { include: { book: true } },
+            borrower: {
+              include: {
+                user: { select: { id: true, email: true, role: true } },
               },
             },
           },
-        },
-      });
-
-      await prisma.bookCopy.update({
-        where: { id: bookCopy.id },
-        data: { status: "borrowed" },
+        });
       });
 
       await logActivity(
@@ -87,7 +78,11 @@ router.post(
 
       res.status(201).json(transaction);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      if (err.status) {
+        return res.status(err.status).json({ error: err.message });
+      }
+      console.error(err);
+      res.status(400).json({ error: "Something went wrong" });
     }
   },
 );
@@ -182,7 +177,7 @@ router.post(
 
       res.json(transaction);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err);
     }
   },
 );
@@ -216,7 +211,7 @@ router.get("/", authenticate, async (req, res) => {
 
     res.json(transactions);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err);
   }
 });
 

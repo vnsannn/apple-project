@@ -1,5 +1,5 @@
 const express = require("express");
-
+const respondError = require("../utils/respondError");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
@@ -46,7 +46,7 @@ router.get(
         emails: JSON.parse(emails),
       });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err);
     }
   },
 );
@@ -84,7 +84,7 @@ router.put(
         emails: cleanEmails,
       });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err);
     }
   },
 );

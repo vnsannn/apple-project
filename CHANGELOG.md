@@ -2,6 +2,32 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 12 - 2026-08-22
+
+### Apply audit fixes
+
+### Added
+
+- Atomic borrow claiming through a conditional update inside a database transaction, preventing double loans
+- Shared error responder with clean client messages and duplicate detection
+- Self-registration entries in the activity log
+- Startup guard for a missing JWT_SECRET
+- Rate limit exemption for the public registration-policy endpoint
+- Registration lock probe now uses an empty login request
+- Borrow concurrency regression test script
+
+### Fixed
+
+- Registration-policy page views no longer consume the login rate limit budget
+- Borrow race condition where concurrent requests could loan one copy twice
+- Raw database errors no longer leak server paths on non-auth routes
+- Login probe effect no longer triggers a lint warning
+
+### Changed
+
+- Library logo compressed from 2.9 MB to 41 KB
+- The useAuth hook moved to its own file to satisfy fast refresh rules
+
 ## Commit 11 - 2026-08-22
 
 ### Login Phase 2

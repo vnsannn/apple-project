@@ -1,12 +1,10 @@
 const express = require("express");
-
+const respondError = require("../utils/respondError");
 const prisma = require("../config/prisma");
 const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const logActivity = require("../utils/activityLog");
-
 const router = express.Router();
-
 const allowedRoles = ["master", "librarian", "borrower"];
 
 // List users
@@ -35,7 +33,7 @@ router.get("/", authenticate, requireRole("master"), async (req, res) => {
 
     res.json(users);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    respondError(res, err);
   }
 });
 
@@ -76,7 +74,7 @@ router.put(
 
       res.json(user);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      respondError(res, err);
     }
   },
 );
