@@ -15,6 +15,7 @@ A full-stack library management system for borrowers, librarians, and master adm
 | Area | Status |
 | --- | --- |
 | Backend core APIs | Complete |
+| Backend security hardening | Complete |
 | Authentication UI, Login Phase 1 | Complete |
 | Frontend and backend authentication wiring | Planned for Phase 2 |
 | Field-level error indicators and animations | Planned for Phase 2 |
@@ -35,6 +36,11 @@ Login Phase 1 focuses on the complete authentication interface and user experien
 - Activity logging for important operations
 - Master-only user role management
 - Configurable email access using approved domains and individual addresses
+- Security headers through helmet
+- Rate limiting on authentication endpoints
+- CORS locked to the configured frontend origin
+- Public registration-policy endpoint exposing only the enabled flag and approved domains
+- Input validation on authentication routes
 - PostgreSQL database managed through Prisma
 
 ### Authentication frontend
@@ -118,6 +124,7 @@ Create `backend/.env` and add your local values:
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/slims_db"
 JWT_SECRET="replace-this-with-a-long-random-secret"
 PORT=5000
+FRONTEND_URL="http://localhost:5173"
 ```
 
 Never commit `.env` or real credentials.
@@ -209,7 +216,7 @@ The next authentication phase will focus on behavior rather than visual design:
 
 ## Current integration notes
 
-The email-policy tooltip expects this public endpoint:
+The public registration-policy endpoint is live:
 
 ```http
 GET /api/v1/auth/registration-policy
@@ -238,4 +245,4 @@ Already registered accounts should skip the registration email-access check and 
 
 ## Changelog
 
-This README is part of the ninth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the Login Phase 1 update summary.
+This README is part of the tenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history and the Login Phase 1 update summary.

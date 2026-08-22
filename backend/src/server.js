@@ -1,51 +1,43 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+app.use(helmet());
+app.use(cors({ origin: [process.env.FRONTEND_URL] }));
 app.use(express.json());
 
-const authRoutes = require("./routes/auth.routes");
-app.use("/api/v1/auth", authRoutes);
+// Max 20 auth attempts per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Try again in 15 minutes." },
+});
 
-const authenticate = require("./middleware/auth");
-const requireRole = require("./middleware/requireRole");
+// Routes
+const authRoutes = require("./routes/auth.routes");
+const booksRoutes = require("./routes/books.routes");
+const borrowersRoutes = require("./routes/borrowers.routes");
+const transactionsRoutes = require("./routes/transactions.routes");
+const activityRoutes = require("./routes/activity.routes");
+const usersRoutes = require("./routes/users.routes");
+const settingsRoutes = require("./routes/settings.routes");
+
+app.use("/api/v1/auth", authLimiter, authRoutes);
+app.use("/api/v1/books", booksRoutes);
+app.use("/api/v1/borrowers", borrowersRoutes);
+app.use("/api/v1/transactions", transactionsRoutes);
+app.use("/api/v1/activity", activityRoutes);
+app.use("/api/v1/users", usersRoutes);
+app.use("/api/v1/settings", settingsRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend alive");
 });
 
-app.get("/api/v1/protected", authenticate, (req, res) => {
-  res.json({ message: "You are authenticated", user: req.user });
-});
-
-app.get(
-  "/api/v1/librarian-area",
-  authenticate,
-  requireRole("librarian", "master"),
-  (req, res) => {
-    res.json({ message: "Welcome librarian/master", user: req.user });
-  },
-);
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-const booksRoutes = require("./routes/books.routes");
-app.use("/api/v1/books", booksRoutes);
-
-const borrowersRoutes = require("./routes/borrowers.routes");
-app.use("/api/v1/borrowers", borrowersRoutes);
-
-const transactionsRoutes = require("./routes/transactions.routes");
-app.use("/api/v1/transactions", transactionsRoutes);
-
-const activityRoutes = require("./routes/activity.routes");
-app.use("/api/v1/activity", activityRoutes);
-
-const usersRoutes = require("./routes/users.routes");
-app.use("/api/v1/users", usersRoutes);
-
-const settingsRoutes = require("./routes/settings.routes");
-app.use("/api/v1/settings", settingsRoutes);

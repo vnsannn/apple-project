@@ -2,6 +2,24 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 10 - 2026-08-22
+
+### Backend security pass
+
+### Added
+
+- Security headers through `helmet`
+- Rate limiting on authentication endpoints (20 requests per 15 minutes per IP)
+- CORS origin lock to the configured frontend URL
+- Input validation on register and login (email format and password minimum)
+- Public registration-policy endpoint for the email tooltip
+
+### Changed
+
+- Moved route registration above the server listener and removed the Phase 0 test routes
+- Replaced raw database errors with clean client messages
+- Stored emails in lowercase to prevent duplicate accounts
+
 ## Commit 9 - 2026-08-21
 
 ### Login Phase 1 and repository documentation
