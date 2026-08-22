@@ -31,4 +31,4 @@ function isDomain(value) {
   );
 }
 
-module.exports = { EMAIL_RE, isEmail, nonEmpty, isArrayOfShapes, isDomain };
+module.exports = { isEmail, nonEmpty, isArrayOfShapes, isDomain };

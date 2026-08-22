@@ -2,6 +2,29 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 18 - 2026-08-22
+
+### Pre-dashboard: audit fixes, dormant-schema features, dead-code cleanup
+
+### Added
+
+- **Reservation API** (`/api/v1/reservations`): create (queued), list, update status, cancel/delete. Title-level FIFO queue; duplicate active reservations rejected with `409`; RBAC librarian/master on writes, read for signed-in users; activity logging.
+- **Announcement API** (`/api/v1/announcements`): create, list, update, delete. Signed-in users can read; librarian/master write; activity logging.
+- **Overdue bookkeeping util** (`utils/overdue.js`): `refreshOverdue()` marks currently-open past-due loans as `overdue`. The transaction list calls it before reading, so the `overdue` field is accurate for the dashboard.
+- **Violation -> auto-ban**: returning a copy as `damaged`/`lost` increments the borrower's `violationCount`; at the threshold (3) the borrower is auto-banned (`status: banned`) inside the same transaction.
+
+### Changed
+
+- `transactions.routes.js` borrow now also guards against a copy that already has an open loan, even if it's marked available (defensive against data drift), returning `400 "Book copy is not available"`.
+- `utils/validate.js` no longer exports the unused `EMAIL_RE` constant.
+
+### Fixed
+
+- **Broken favicon** (`frontend/index.html`): was pointing at `/frontend/src/assets/logo.png` (404 in production); now `href="/favicon.svg"`, which is copied to `dist/`.
+- Removed the dead `<link rel="stylesheet" href="">` from the head.
+- Removed unused scaffold assets `src/assets/react.svg`, `src/assets/vite.svg`, `src/assets/hero.png` and unused `public/icons.svg`.
+- Removed the unused `pg` direct dependency (it ships transitively with `@prisma/adapter-pg`).
+
 ## Commit 17 - 2026-08-22
 
 ### Audit fixes + precision improvements (post-Phase-4 audit)

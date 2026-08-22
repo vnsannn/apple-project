@@ -5,7 +5,11 @@ const authenticate = require("../middleware/auth");
 const requireRole = require("../middleware/requireRole");
 const respondError = require("../utils/respondError");
 const { nonEmpty } = require("../utils/validate");
+const { refreshOverdue } = require("../utils/overdue");
 const router = express.Router();
+
+// Auto-ban a borrower after this many violations (damaged / lost returns).
+const VIOLATION_BAN_THRESHOLD = 3;
 
 // Borrow a book copy
 // Borrow a book copy
@@ -43,6 +47,16 @@ router.post(
       }
 
       if (bookCopy.status !== "available") {
+        return res.status(400).json({ error: "Book copy is not available" });
+      }
+
+      // Defensive: even if the copy is marked available, never allow a second
+      // open loan on it (guards against data drift where an open loan exists
+      // without the copy being marked borrowed).
+      const openOnCopy = await prisma.transaction.findFirst({
+        where: { bookCopyId: bookCopy.id, returnedAt: null },
+      });
+      if (openOnCopy) {
         return res.status(400).json({ error: "Book copy is not available" });
       }
 
@@ -118,6 +132,13 @@ router.post(
         return res.status(404).json({ error: "Book copy not found" });
       }
 
+      // A borrowed copy has exactly one open loan (guaranteed by the borrow
+      // claim). Grab its borrower up front so we can count violations below.
+      const openLoan = await prisma.transaction.findFirst({
+        where: { bookCopyId: bookCopy.id, returnedAt: null },
+        include: { borrower: true },
+      });
+
       const transaction = await prisma.$transaction(async (tx) => {
         // Atomically close the open loan: only succeeds if returnedAt is still
         // null. Two concurrent returns of the same copy -> exactly one wins.
@@ -141,6 +162,25 @@ router.post(
             ...(condition ? { condition } : {}),
           },
         });
+
+        // A damaged or lost return is a violation. Count it, and auto-ban if
+        // the borrower crosses the threshold. Runs inside the same tx so the
+        // count and the status flip are consistent.
+        if (condition === "damaged" || condition === "lost") {
+          if (!openLoan?.borrower) {
+            throw new Error("Borrower not found");
+          }
+          const borrower = await tx.borrower.update({
+            where: { id: openLoan.borrower.id },
+            data: { violationCount: { increment: 1 } },
+          });
+          if (borrower.violationCount >= VIOLATION_BAN_THRESHOLD) {
+            await tx.borrower.update({
+              where: { id: borrower.id },
+              data: { status: "banned" },
+            });
+          }
+        }
 
         return tx.transaction.findFirst({
           where: { bookCopyId: bookCopy.id, returnedAt: { not: null } },
@@ -172,6 +212,7 @@ router.post(
 // List transactions
 router.get("/", authenticate, async (req, res) => {
   try {
+    await refreshOverdue();
     const transactions = await prisma.transaction.findMany({
       include: {
         bookCopy: {

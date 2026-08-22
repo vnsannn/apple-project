@@ -32,6 +32,8 @@ const transactionsRoutes = require("./routes/transactions.routes");
 const activityRoutes = require("./routes/activity.routes");
 const usersRoutes = require("./routes/users.routes");
 const settingsRoutes = require("./routes/settings.routes");
+const reservationsRoutes = require("./routes/reservations.routes");
+const announcementsRoutes = require("./routes/announcements.routes");
 
 app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1/books", booksRoutes);
@@ -40,6 +42,8 @@ app.use("/api/v1/transactions", transactionsRoutes);
 app.use("/api/v1/activity", activityRoutes);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/settings", settingsRoutes);
+app.use("/api/v1/reservations", reservationsRoutes);
+app.use("/api/v1/announcements", announcementsRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend alive");

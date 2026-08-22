@@ -52,6 +52,11 @@ Login and registration are fully connected to the backend, including per-field e
 - Pluggable reset email sender (`console`/`smtp` modes) via Nodemailer
 - Atomic borrow and return with conditional claims to prevent double loans
 - Borrow flow blocks banned borrowers (`403 "Borrower account is banned"`)
+- Borrow flow also rejects a copy that already has an open loan, even if marked available
+- Overdue flagging for open past-due loans, refreshed when the transaction list is read
+- Violation counting on damaged/lost returns, with automatic ban after a threshold
+- Title-level reservation API (queued/active/claimed/expired/cancelled), duplicate-safe
+- Announcement API for system-wide notices
 - Server-side input validation across books, transactions, borrowers, and settings
 - Clean error responses across all API routes, with `404` for missing/invalid records
 - Startup guard for required environment secrets
@@ -247,6 +252,8 @@ Project documentation is maintained in this root README. The generated Vite `fro
 | Activity logs | `/api/v1/activity` |
 | Users and roles | `/api/v1/users` |
 | Email access settings | `/api/v1/settings/email-access` |
+| Reservations | `/api/v1/reservations` |
+| Announcements | `/api/v1/announcements` |
 
 Protected routes require a JWT in the request header:
 
@@ -293,4 +300,4 @@ Individually approved email addresses are never exposed. Already registered acco
 
 ## Changelog
 
-This README is part of the seventeenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
+This README is part of the eighteenth project commit. See [CHANGELOG.md](CHANGELOG.md) for the complete commit milestone history.
