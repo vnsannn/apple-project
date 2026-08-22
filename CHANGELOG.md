@@ -2,6 +2,19 @@
 
 All notable project updates are recorded here by commit milestone.
 
+## Commit 22 - 2026-08-22
+
+### Dependency update: nodemailer 9 (clears advisories)
+
+### Changed
+
+- Upgraded `nodemailer` from `7` to `9.0.5`. The reset-email code (`utils/email.js`) calls the same `createTransport`/`sendMail` API, so no code change was required; the SMTP path was verified to still work on v9.
+- This clears the **4 high-severity nodemailer advisories** reported by `npm audit` (SMTP command injection via `envelope.size`; CRLF injection in transport name and `List-*` headers; improper TLS certificate validation in OAuth2 token fetch; `raw` option file-read/SSRF).
+
+### Notes
+
+- **Remaining advisory left intentionally:** `npm audit` still reports `deepmerge-ts` (via `@prisma/config`, the Prisma CLI). The real fix is `deepmerge-ts@8.0.0`, but no published Prisma 7.x release depends on it yet, so `npm audit fix --force` would *downgrade* Prisma to `6.12.0` (breaking). This is a dev/build-tooling advisory, not reachable from the running server or any API route, so it's accepted and tracked as an upstream-waiting item — a clean Prisma 7.x bump that pulls `deepmerge-ts@8` will clear it.
+
 ## Commit 21 - 2026-08-22
 
 ### Borrow-flow atomicity + borrower-delete deadlock fix + body handling + dead-code cleanup
